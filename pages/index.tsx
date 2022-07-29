@@ -66,7 +66,7 @@ const Home: NextPage = () => {
       <Spacer y={1} />
 
       {!isLoading &&
-        data?.map((game, index) => (
+        data?.reverse().map((game, index) => (
           <Fragment key={index}>
             <Card>
               <Card.Header>
