@@ -1,28 +1,34 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAuthContext from "../context/AuthContext";
 import useNearContext from "../context/NearContext";
 
 export default function useJoinGameMutation() {
-  const { contract } = useNearContext();
+  const queryClient = useQueryClient();
+  const { contract, accountId } = useNearContext();
   const { isSignedIn } = useAuthContext();
 
   async function joinGame({
-    gameIndex,
+    gamePin,
     amount,
   }: {
-    gameIndex: number;
+    gamePin: string;
     amount: string;
   }) {
-    if (!isSignedIn) {
+    if (!isSignedIn()) {
       console.log("not signed in");
       throw Error("Not signed in");
     }
 
     return contract?.joinGame?.({
-      args: { gameIndex },
+      args: { gamePin },
       amount,
     });
   }
 
-  return useMutation(joinGame);
+  return useMutation(joinGame, {
+    onSuccess() {
+      queryClient.invalidateQueries(["games", "all"]);
+      queryClient.invalidateQueries(["games", "my", accountId]);
+    },
+  });
 }

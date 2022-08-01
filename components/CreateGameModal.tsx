@@ -1,14 +1,16 @@
 import { Button, Input, Modal, Row, Text } from "@nextui-org/react";
+import { nanoid } from "nanoid";
 import { useState } from "react";
 
 interface Props {
   open: boolean;
   onClose(): void;
-  onCreate(deposit: string): void;
+  onCreate({ deposit, pin }: { deposit: string; pin: string }): void;
 }
 
 export default function CreateGameModal({ open, onClose, onCreate }: Props) {
-  const [deposit, setDeposit] = useState("0.000001");
+  const [deposit, setDeposit] = useState("1");
+  const [pin, setPin] = useState(nanoid(4));
 
   return (
     <Modal
@@ -24,6 +26,7 @@ export default function CreateGameModal({ open, onClose, onCreate }: Props) {
       </Modal.Header>
       <Modal.Body>
         <Input
+          label="Deposit (in N)"
           labelRight="N"
           bordered
           fullWidth
@@ -33,12 +36,23 @@ export default function CreateGameModal({ open, onClose, onCreate }: Props) {
           value={deposit}
           onChange={(e) => setDeposit(e.target.value)}
         />
+
+        <Input
+          label="Game Pin"
+          bordered
+          fullWidth
+          color="primary"
+          size="lg"
+          placeholder="Game Pin"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+        />
       </Modal.Body>
       <Modal.Footer>
         <Button auto flat color="error" onClick={onClose}>
           Close
         </Button>
-        <Button auto onClick={() => onCreate?.(deposit)}>
+        <Button auto onClick={() => onCreate?.({ deposit, pin })}>
           Create
         </Button>
       </Modal.Footer>

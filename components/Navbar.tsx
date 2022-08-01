@@ -1,4 +1,4 @@
-import { Button, Card, Col, Loading, Row, Text } from "@nextui-org/react";
+import { Button, Col, Loading, Row, Text } from "@nextui-org/react";
 import { utils } from "near-api-js";
 import Link from "next/link";
 import useAuthContext from "../context/AuthContext";
@@ -11,8 +11,12 @@ export default function Navbar() {
   const { data: balance, isLoading } = useBalanceQuery();
 
   return (
-    <Row justify="space-between" align="center">
-      <Col span={18}>
+    <Row
+      justify="space-between"
+      align="center"
+      css={{ "@xsMax": { flexDirection: "column" } }}
+    >
+      <Col>
         <Row align="baseline">
           <Link href="/">
             <Text
@@ -20,12 +24,17 @@ export default function Navbar() {
               css={{
                 textGradient: "45deg, $blue600 -20%, $pink600 50%",
                 cursor: "pointer",
+                "@xsMax": { fontSize: "$xl4" },
               }}
             >
               Rock Paper Scissors
             </Text>
           </Link>
-          <Text css={{ ml: "$4" }} color="default" h5>
+          <Text
+            css={{ "@xs": { ml: "$4" }, "@xsMax": { display: "none" } }}
+            color="default"
+            h5
+          >
             on Near
           </Text>
         </Row>

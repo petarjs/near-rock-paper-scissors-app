@@ -7,19 +7,19 @@ export default function usePlayGameMutation() {
   const { isSignedIn } = useAuthContext();
 
   async function playGame({
-    gameIndex,
+    gamePin,
     moveHash,
   }: {
-    gameIndex: string;
+    gamePin: string;
     moveHash: string;
   }) {
-    if (!isSignedIn) {
+    if (!isSignedIn()) {
       console.log("not signed in");
       throw Error("Not signed in");
     }
 
     return contract?.play?.({
-      args: { moveHash, gameIndex: parseInt(gameIndex, 10) },
+      args: { moveHash, gamePin },
     });
   }
 

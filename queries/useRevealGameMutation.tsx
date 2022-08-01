@@ -7,19 +7,19 @@ export default function useRevealGameMutation() {
   const { isSignedIn } = useAuthContext();
 
   async function playGame({
-    gameIndex,
+    gamePin,
     moveRaw,
   }: {
-    gameIndex: string;
+    gamePin: string;
     moveRaw: string;
   }) {
-    if (!isSignedIn) {
+    if (!isSignedIn()) {
       console.log("not signed in");
       throw Error("Not signed in");
     }
 
     return contract?.reveal?.({
-      args: { moveRaw, gameIndex: parseInt(gameIndex, 10) },
+      args: { moveRaw, gamePin },
     });
   }
 

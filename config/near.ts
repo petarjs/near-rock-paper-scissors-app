@@ -1,5 +1,5 @@
 export const CONTRACT_NAME =
-  process.env.CONTRACT_NAME || "rock-paper-scissors.petarjs.testnet";
+  process.env.CONTRACT_NAME || "rock-paper-scissors-v3.petarjs.testnet";
 
 export enum NEAR_ENV {
   PRODUCTION = "production",

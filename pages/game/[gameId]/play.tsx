@@ -12,8 +12,11 @@ import type { NextPage } from "next";
 import { useRouter } from "next/router";
 import { Fragment, useEffect, useState } from "react";
 import Layout from "../../../components/layout/Layout";
+import Move from "../../../components/Play/Move";
+import OpponentMove from "../../../components/Play/OpponentMove";
+import PlayerHeader from "../../../components/Play/PlayerHeader";
+import useAuthContext from "../../../context/AuthContext";
 import useNearContext, { Game } from "../../../context/NearContext";
-import useInterval from "../../../hooks/useInterval";
 import useGameQuery from "../../../queries/useGameQuery";
 import usePlayGameMutation from "../../../queries/usePlayGameMutation";
 import useRevealGameMutation from "../../../queries/useRevealGameMutation";
@@ -21,13 +24,14 @@ import sha256 from "../../../util/sha256";
 
 const Play: NextPage = () => {
   const { push, query } = useRouter();
-  const { accountId } = useNearContext();
+  const { accountId, nearLoading } = useNearContext();
+  const { isSignedIn } = useAuthContext();
   const [savedMove, setSavedMove] = useState("");
   const savedMoveParsed = savedMove?.split("-")[0];
   const [savedMoveValid, setSavedMoveValid] = useState(false);
 
-  const gameIndex = query.gameId as string;
-  const { data: game, isLoading } = useGameQuery(gameIndex, {
+  const gamePin = query.gameId as string;
+  const { data: game, isLoading } = useGameQuery(gamePin, {
     refetchInterval: 1000,
   });
   const playMutation = usePlayGameMutation();
@@ -46,6 +50,7 @@ const Play: NextPage = () => {
   useEffect(() => {
     async function main() {
       const hash = await sha256(savedMove);
+
       if (hash === game?.p1Hash || hash === game?.p2Hash) {
         setSavedMoveValid(true);
         setMove(savedMoveParsed);
@@ -56,14 +61,14 @@ const Play: NextPage = () => {
   }, [savedMove, game]);
 
   useEffect(() => {
-    const hashesSubmitted = game?.p1Hash && game?.p2Hash;
+    const hashesSubmitted = !!game?.p1Hash && !!game?.p2Hash;
     const revealedMyMove =
       accountId === game?.p1 ? !!game?.p1Raw : !!game?.p2Raw;
 
     if (hashesSubmitted && !revealedMyMove) {
       revealMove();
     }
-  }, [game, accountId]);
+  }, [game, accountId, savedMoveValid]);
 
   const participatingInGame = (game?: Game) => {
     if (!game) {
@@ -86,32 +91,42 @@ const Play: NextPage = () => {
 
   async function playMove() {
     try {
-      if (!savedMoveValid) {
-        return;
-      }
-
       const salt = Math.floor(Math.random() * 10 ** 10);
       const moveRaw = `${move}-${salt}`;
       localStorage[`${accountId}/game/${query.gameId as string}/move`] =
         moveRaw;
       const moveHash = await sha256(moveRaw);
 
-      playMutation.mutate({ moveHash, gameIndex });
+      playMutation.mutate({ moveHash, gamePin });
     } catch (error) {
       console.log({ error });
     }
   }
 
   async function revealMove() {
+    if (!savedMoveValid) {
+      console.log("Saved move not valid");
+      //   localStorage[`${accountId}/game/${query.gameId as string}/move`] = "";
+      return;
+    }
+
     const moveRaw =
       localStorage[`${accountId}/game/${query.gameId as string}/move`];
-    revealMutation.mutate({ gameIndex, moveRaw });
+    revealMutation.mutate({ gamePin, moveRaw });
   }
 
   const showPlay =
     !!move &&
     !(game?.p1 === accountId && !!game?.p1Hash) &&
     !(game?.p2 === accountId && !!game?.p2Hash);
+
+  const playerWon = !!game?.winner && accountId === game?.[game?.winner];
+
+  const secondPlayer = game?.p1 === accountId ? game?.p2 : game?.p1;
+
+  const hasSecondPlayerWon =
+    !!game?.winner &&
+    (game.p1 === accountId ? game.p2 : game.p1) === game?.[game?.winner];
 
   //   useEffect(() => {
   //     const nftFilter = [
@@ -156,55 +171,31 @@ const Play: NextPage = () => {
   //     };
   //   }, []);
 
-  const emojiMap = {
-    rock: "🪨",
-    paper: "📄",
-    scissors: "✂️",
-  };
-  if (!isLoading && !participatingInGame(game)) {
-    push("/");
-    return null;
-  }
+  useEffect(() => {
+    if (
+      (!isLoading && !participatingInGame(game)) ||
+      (!nearLoading && !isSignedIn())
+    ) {
+      push("/");
+    }
+  }, [isLoading, nearLoading]);
 
   return (
     <Layout>
-      <Row justify="center" align="center">
+      <Row
+        justify="center"
+        align="center"
+        css={{ "@xsMax": { flexDirection: "column" } }}
+      >
         <Col>
-          <Card>
-            <Card.Body>
-              <Row justify="space-between">
-                {isLoading && <Spinner />}
-                {!isLoading && !!game && (
-                  <Text
-                    span
-                    h3
-                    b
-                    css={{
-                      textGradient: "45deg, $blue600 -20%, $pink600 50%",
-                    }}
-                  >
-                    {accountId}
-                  </Text>
-                )}
-
-                {!!game?.winner && accountId === game?.[game?.winner] && (
-                  <Text b>WINNER</Text>
-                )}
-
-                {showPlay && (
-                  <Button
-                    auto
-                    color="gradient"
-                    css={{ ml: "$8" }}
-                    onPress={() => playMove()}
-                  >
-                    {playMutation.isLoading && <Spinner />}
-                    Play
-                  </Button>
-                )}
-              </Row>
-            </Card.Body>
-          </Card>
+          <PlayerHeader
+            player={accountId}
+            isLoading={isLoading}
+            hasWon={playerWon}
+            showPlay={showPlay}
+            onPlay={playMove}
+            playLoading={playMutation.isLoading}
+          />
         </Col>
 
         <Col span={2}>
@@ -214,86 +205,44 @@ const Play: NextPage = () => {
         </Col>
 
         <Col>
-          <Card>
-            <Card.Body>
-              <Row justify="space-between">
-                {isLoading && <Spinner />}
-                {!isLoading && !!game && (
-                  <Text
-                    span
-                    h3
-                    b
-                    css={{
-                      textGradient: "45deg, $blue600 -20%, $pink600 50%",
-                    }}
-                  >
-                    {game.p1 === accountId ? game.p2 : game.p1}
-                  </Text>
-                )}
-                {!!game?.winner &&
-                  (game.p1 === accountId ? game.p2 : game.p1) ===
-                    game?.[game?.winner] && <Text b>WINNER</Text>}
-              </Row>
-            </Card.Body>
-          </Card>
+          <PlayerHeader
+            player={secondPlayer || "Waiting for player to join..."}
+            isLoading={isLoading}
+            hasWon={hasSecondPlayerWon}
+            showPlay={false}
+            playLoading={false}
+          />
         </Col>
       </Row>
 
       <Spacer y={1} />
 
       {!isLoading && (
-        <Row align="center">
+        <Row align="center" css={{ "@xsMax": { flexDirection: "column" } }}>
           <Col>
             <Row>
               <Col>
-                <Card
-                  isPressable
-                  onPress={() => makeMove("rock")}
-                  css={{
-                    background: move === "rock" ? "$gradient" : undefined,
-                  }}
-                >
-                  <Card.Body css={{ textAlign: "center" }}>
-                    <Text span h1 size={90}>
-                      🪨
-                    </Text>
-                    <Text>Rock</Text>
-                  </Card.Body>
-                </Card>
+                <Move
+                  move="rock"
+                  isSelected={move === "rock"}
+                  onSelect={makeMove}
+                />
               </Col>
               <Spacer x={1} />
               <Col>
-                <Card
-                  isPressable
-                  onPress={() => makeMove("paper")}
-                  css={{
-                    background: move === "paper" ? "$gradient" : undefined,
-                  }}
-                >
-                  <Card.Body css={{ textAlign: "center" }}>
-                    <Text span h1 size={90}>
-                      📄
-                    </Text>
-                    <Text>Paper</Text>
-                  </Card.Body>
-                </Card>
+                <Move
+                  move="paper"
+                  isSelected={move === "paper"}
+                  onSelect={makeMove}
+                />
               </Col>
               <Spacer x={1} />
               <Col>
-                <Card
-                  isPressable
-                  onPress={() => makeMove("scissors")}
-                  css={{
-                    background: move === "scissors" ? "$gradient" : undefined,
-                  }}
-                >
-                  <Card.Body css={{ textAlign: "center" }}>
-                    <Text span h1 size={90}>
-                      ✂️
-                    </Text>
-                    <Text>Scissors</Text>
-                  </Card.Body>
-                </Card>
+                <Move
+                  move="scissors"
+                  isSelected={move === "scissors"}
+                  onSelect={makeMove}
+                />
               </Col>
             </Row>
           </Col>
@@ -306,25 +255,7 @@ const Play: NextPage = () => {
               </Card.Body>
             </Card>
           </Col>
-          <Col>
-            <Card>
-              <Card.Body css={{ textAlign: "center" }}>
-                <Text span h1 size={90}>
-                  {(accountId === game?.p1 && !game?.p2Raw) ||
-                    (accountId === game?.p2 && !game?.p1Raw && "🧐")}
-
-                  {accountId === game?.p1 &&
-                    !!game?.p2Raw &&
-                    emojiMap[game.p2Raw.split("-")[0]]}
-
-                  {accountId === game?.p2 &&
-                    !!game?.p1Raw &&
-                    emojiMap[game.p1Raw.split("-")[0]]}
-                </Text>
-                <Text>Thinking...</Text>
-              </Card.Body>
-            </Card>
-          </Col>
+          <Col>{!!game && <OpponentMove game={game} />}</Col>
         </Row>
       )}
     </Layout>

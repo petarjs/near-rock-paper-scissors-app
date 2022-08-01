@@ -21,6 +21,7 @@ interface Context {
   accountId: any;
   contract: Partial<ContractInterface> | undefined;
   nearConfig: any;
+  nearLoading: boolean;
 }
 
 export const NearContext = createContext<Context | undefined>(undefined);
@@ -30,6 +31,7 @@ export default function useNearContext(): Context {
 }
 
 export interface Game {
+  pin: string;
   p1: string;
   p2: string;
   deposit: string;
@@ -52,8 +54,9 @@ type ViewMethodOptions = Record<string, string | number>;
 
 export interface ContractInterface extends Contract {
   getGames(opts?: ViewMethodOptions): Game[];
+  getMyGamesInProgress(opts?: ViewMethodOptions): Game[];
   getAvailableGames(opts?: ViewMethodOptions): Game[];
-  getGameByIndex(opts?: ViewMethodOptions): Game;
+  getGameByPin(opts?: ViewMethodOptions): Game;
   createGame(opts?: ChangeMethodOptions): Promise<void>;
   joinGame(opts?: ChangeMethodOptions): Promise<void>;
   play(opts?: ChangeMethodOptions): Promise<void>;
@@ -62,12 +65,18 @@ export interface ContractInterface extends Contract {
 
 export function NearProvider({ children }: PropsWithChildren<unknown>) {
   const [near, setNear] = useState<Near>();
+  const [nearLoading, setNearLoading] = useState(true);
   const [nearConfig, setNearConfig] = useState<NearConfig>();
   const [walletConnection, setWalletConnection] = useState<WalletConnection>();
   const [accountId, setAccountId] = useState();
   const [contract, setContract] = useState<Partial<ContractInterface>>();
 
-  const viewMethods = ["getGames", "getGameByIndex", "getAvailableGames"];
+  const viewMethods = [
+    "getGames",
+    "getGameByPin",
+    "getAvailableGames",
+    "getMyGamesInProgress",
+  ];
   const changeMethods = ["createGame", "joinGame", "play", "reveal"];
 
   useEffect(() => {
@@ -95,6 +104,7 @@ export function NearProvider({ children }: PropsWithChildren<unknown>) {
       setWalletConnection(walletConnection);
       setAccountId(walletConnection.getAccountId());
       setContract(contract);
+      setNearLoading(false);
     }
 
     main();
@@ -106,6 +116,7 @@ export function NearProvider({ children }: PropsWithChildren<unknown>) {
     accountId,
     contract,
     nearConfig,
+    nearLoading,
   };
 
   return <NearContext.Provider value={value}>{children}</NearContext.Provider>;

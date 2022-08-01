@@ -1,20 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import useNearContext from "../context/NearContext";
 
-export default function useGameQuery(gameIndex?: string, opts?: any) {
+export default function useGameQuery(gamePin?: string, opts?: any) {
   const { contract } = useNearContext();
 
   return useQuery(
-    ["games", gameIndex],
+    ["games", gamePin],
     () => {
-      if (!gameIndex) {
+      if (!gamePin) {
         return;
       }
 
-      return contract?.getGameByIndex?.({ gameIndex: parseInt(gameIndex, 10) });
+      return contract?.getGameByPin?.({ gamePin });
     },
     {
-      enabled: !!contract && !!gameIndex,
+      enabled: !!contract && !!gamePin,
       ...opts,
     }
   );
