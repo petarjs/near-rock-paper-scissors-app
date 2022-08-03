@@ -22,6 +22,7 @@ interface Context {
   contract: Partial<ContractInterface> | undefined;
   nearConfig: any;
   nearLoading: boolean;
+  reset(): void;
 }
 
 export const NearContext = createContext<Context | undefined>(undefined);
@@ -110,6 +111,14 @@ export function NearProvider({ children }: PropsWithChildren<unknown>) {
     main();
   }, []);
 
+  function reset() {
+    setNear(undefined);
+    setNearConfig(undefined);
+    setWalletConnection(undefined);
+    setAccountId(undefined);
+    setContract(undefined);
+  }
+
   const value = {
     near,
     walletConnection,
@@ -117,6 +126,7 @@ export function NearProvider({ children }: PropsWithChildren<unknown>) {
     contract,
     nearConfig,
     nearLoading,
+    reset,
   };
 
   return <NearContext.Provider value={value}>{children}</NearContext.Provider>;

@@ -11,9 +11,10 @@ import {
   Text,
 } from "@nextui-org/react";
 import { utils } from "near-api-js";
+import { JsonRpcProvider } from "near-api-js/lib/providers";
 import type { NextPage } from "next";
 import { useRouter } from "next/router";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import CreateGameModal from "../components/CreateGameModal";
 import Layout from "../components/layout/Layout";
 import useAuthContext from "../context/AuthContext";
@@ -24,8 +25,8 @@ import useJoinGameMutation from "../queries/useJoinGameMutation";
 import useMyGamesQuery from "../queries/useMyGamesQuery";
 
 const Home: NextPage = () => {
-  const { push } = useRouter();
-  const { accountId } = useNearContext();
+  const { push, query } = useRouter();
+  const { accountId, near } = useNearContext();
   const { isSignedIn, signIn } = useAuthContext();
   const { data: availableGames, isLoading } = useGamesQuery();
   const { data: myGames, isLoading: isLoadingMyGames } = useMyGamesQuery();
@@ -48,6 +49,19 @@ const Home: NextPage = () => {
   const games = gameFilter === "available" ? availableGames : myGames;
 
   console.log({ availableGames, myGames });
+
+  useEffect(() => {
+    if (!near) {
+      return;
+    }
+
+    if (query.transactionHashes) {
+      near.connection.provider
+        .txStatus(query.transactionHashes as string, accountId)
+        .then((tx) => console.log({ tx }))
+        .catch((x) => console.log({ x }));
+    }
+  }, [near, query.transactionHashes]);
 
   const participatingInGame = (game: Game) =>
     game.p1 === accountId || game.p2 === accountId;

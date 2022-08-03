@@ -5,7 +5,8 @@ import useNearContext from "../context/NearContext";
 
 export default function useCreateGameMutation() {
   const queryClient = useQueryClient();
-  const { contract, accountId } = useNearContext();
+  const { contract, accountId, walletConnection, nearConfig } =
+    useNearContext();
   const { isSignedIn } = useAuthContext();
 
   async function createGame({

@@ -128,6 +128,9 @@ const Play: NextPage = () => {
     !!game?.winner &&
     (game.p1 === accountId ? game.p2 : game.p1) === game?.[game?.winner];
 
+  /**
+   * @see https://github.com/evgenykuzyakov/nft-mints/blob/master/src/App.js
+   */
   //   useEffect(() => {
   //     const nftFilter = [
   //       {

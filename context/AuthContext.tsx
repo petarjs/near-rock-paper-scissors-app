@@ -14,7 +14,7 @@ export default function useAuthContext(): Context {
 }
 
 export function AuthProvider({ children }: PropsWithChildren<unknown>) {
-  const { nearConfig, walletConnection } = useNearContext();
+  const { nearConfig, walletConnection, reset } = useNearContext();
 
   function signIn() {
     walletConnection?.requestSignIn(nearConfig.contractName);
@@ -22,6 +22,7 @@ export function AuthProvider({ children }: PropsWithChildren<unknown>) {
 
   function signOut() {
     walletConnection?.signOut();
+    reset();
   }
 
   function isSignedIn() {
